@@ -1,0 +1,148 @@
+#!/bin/bash
+function is_exist
+{
+declare -i exist=0
+for file in `ls "./db/$database_name"`
+do
+	if [ $file == $1 ]
+	then
+		exist=1
+		echo "$file" "$1"
+		break
+
+	fi
+done
+return $exist
+}
+function is_num
+{
+	if [ $# -eq 0 ]
+	then
+		echo "you must provide an argument"
+		exit 1
+	fi
+	if [[ $1 =~ ^[0-9]+$  ]]
+	then
+		return 1
+	else
+		return 0
+	fi
+		
+}
+function create_table_types
+{
+	if [ $# -eq 0 ]
+	then
+		exit 1
+	fi
+	table_name=$1
+	local n=0
+	while [ 1 -eq 1 ]
+	do
+		echo "enter number of fields"
+		read n
+		is_num $n
+		if [ $? -eq 1 ]
+		then
+		       echo "correct"
+		       break
+	        fi		
+	done
+	declare fields_names=""
+	declare fields_types=""
+	for i in {1..$n}
+	do
+		echo -n "enter field number $i : "
+		local f=""
+		read f
+		echo -n "select type of field :"
+		local c=""
+		select choice in "integer" "string" "char";
+		do
+			c=$choice
+			break
+		done
+		echo $c
+		if [[ $fields_names == "" ]]
+		then
+			fields_names="$f"
+		else
+			fields_names="${fields_names}|${f}"
+		fi
+		if [[ $fields_types == "" ]]
+		then
+			fields_types="$c"
+		else
+			fields_types="${fields_types}|${c}"
+		fi
+	done
+	echo $fields_names >> "./db/$database_name/$table_name"
+	echo $fields_types >> "./db/$database_name/$table_name"
+
+	
+
+}
+function create_table
+{
+	#table_path="./db/$database_name/$1"
+	#echo $table_path
+	create_table_types $1
+	#touch $table_path
+	echo "table created succesfully"
+}
+function list_tables
+{
+	for file in `ls ".//db//$database_name//"`
+	do
+		echo "$file"
+	done
+}
+function drop_table
+{
+	rm -r ".//db//$table_name"
+	echo "table $table_name got deleted"
+}
+function table_menu
+{
+select choice in "Create Table" "List Tables" "drop Table";
+do
+case $choice in 
+"Create Table" )
+	echo "enter the name of the table to be created !"
+	read  table_name
+	is_exist $table_name
+	if [ $? -eq 1 ]
+	then
+		echo "sorry table $table_name  alread exist"
+	else
+		create_table $table_name
+	fi
+	echo $?
+	;;
+"List Tables" )
+	echo "list tables"
+	list_tables
+	;;
+"drop Table" )
+	echo "enter the table name to be droped"
+	read table_name
+	is_exist $table_name
+	if [ $? -eq 1 ]
+	then
+		drop_table $table_name
+	else
+		echo "table doesn't exist"
+	fi
+	;;
+* ) 
+	echo "invalid option"
+esac
+done
+}
+if [ $# -eq 0 ]
+then
+	echo "you are not connected to a database"
+	return 1
+fi
+database_name=$1
+table_menu
