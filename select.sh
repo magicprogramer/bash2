@@ -1,29 +1,32 @@
 #!/usr/bin/bash
 if [ $# -ne 2 ]
 then
-	echo "expected two args"
+	zenity --error --text="missing args"
 	return 
 fi
 database_name=$1
 table_name=$2
 source checkers.sh
 declare -i n=0
-#head -n 1  "db/$database_name/$table_name"
-#tail -n 1 "db/$database_name/$table_name"
 n=$(head -n 1 "db/$database_name/$table_name" | grep -o "|" | wc -l)
 n=$((n+1))
-echo "number of fields equal to " $n
-echo "you are required to enter the fields you will search by it or leave it empty to not search by it"
-echo "not if you leave all fields empty it will retrieve all data in the table"
+zenity --info --title="select from table $table_name" --text="number of fields equals to $n"
+zenity --info --title="select from table $table_name" --text="you are required to enter the fields you wil search by it or leave it empty to not search by it"
+zenity --info --text="note if you leave all fields empty it will retreive all data in the table"
 pattern=""
+columns=""
 for i in $(seq 1 $n)
 do
 	type1=$(sed -n '2p' "./db/$database_name/$table_name" | cut -d "|" -f $i)
-	echo "enter "  $(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i) "($type1) : "
-	field=""
+	columns="$columns --column=$type1 "
 	while (true)
 	do
-	 read field
+	field=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)
+	field=$(zenity --entry --text="enter $field ($type1)")
+	if [ $? -eq 1 ]
+	then
+		continue
+	fi
 	 if [ -z  "$field" ]
 	then 
 		break
@@ -35,7 +38,7 @@ do
 	then
 		break
 	else
-		echo "you should enter an integer"
+		zenity --error --text="expect an integer"
 		continue
 	fi
 	 fi
@@ -46,7 +49,7 @@ do
 	then 
 		break
 	else
-		echo "you should enter exactly one character"
+		zenity --error --text="expected exactly one character"
 		continue
 	fi
 	 fi
@@ -93,8 +96,8 @@ done
 			print $0;
 		}
 }
-' "db/$database_name/$table_name"
-
+' "db/$database_name/$table_name" > "/tmp/f11"
+	cat /tmp/f11 | tr '|' ' ' |  xargs zenity --list $columns
 #echo "$pattern"
-
+echo $columns
 #types=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f 1-4)
