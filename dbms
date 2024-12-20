@@ -46,23 +46,17 @@ function create_table_types {
     chosen=0
     for i in $(seq 1 $n); do
         local f=$(zenity --entry --text="Enter field number $i")
-        echo -n "Select type of field: "
         local c=""
-        zenity --list --column="select field type" 
-        select choice in "integer" "string" "char"; do
-            c=$choice
-            break
-        done
+        c=$(zenity --list --column="select field type" \
+		"integer" "string" "char")	
 	if [ $chosen -ne 1 ]
 	then
-		select choice in "pk" "not pk"
-		do
+		choice=$(zenity --list --column="set as pk?" \
+			"pk" "not pk")
 			if [ "$choice" == "pk" ]
 			then
 				chosen=1;
 			fi
-			break
-		done
 		if [ $chosen -eq 1 ]
 		then
 			primary_key=1
@@ -94,7 +88,7 @@ function create_table_types {
 
 function create_table {
     create_table_types $1
-    echo "Table created successfully."
+    zenity --info --text="table created sucessfully."
 }
 
 function list_tables {
