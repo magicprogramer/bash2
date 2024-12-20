@@ -33,8 +33,7 @@ function create_table_types {
     table_name=$1
     local n=0
     while true; do
-        echo "Enter number of fields"
-        read n
+        n=$(zenity --entry --title="create table" --text="Enter number of fields")
         is_num $n
         if [ $? -eq 1 ]; then
            # echo "correct"
@@ -46,12 +45,10 @@ function create_table_types {
     primary_key=0
     chosen=0
     for i in $(seq 1 $n); do
-        echo $i
-        echo -n "Enter field number $i: "
-        local f=""
-        read f
+        local f=$(zenity --entry --text="Enter field number $i")
         echo -n "Select type of field: "
         local c=""
+        zenity --list --column="select field type" 
         select choice in "integer" "string" "char"; do
             c=$choice
             break
@@ -215,29 +212,36 @@ view_table() {
 
 # Function to display table menu
 function table_menu {
-    select choice in "Create Table" "List Tables" "Drop Table" "Insert into table" "Delete from table" "Select from table" "Update table" "Retern to Main menu" "View table content" "Exit"; do
+    while [ 1 -eq 1 ]
+    do
+      choice=$(zenity --list --title="Database Menu" --text="Please select an option:" --column="menu"\
+        "Create Table" \
+        "List Tables" "Drop Table" "Insert into table" \
+        "Delete from table" \
+        "Select from table" "Update table" "Return to Main menu" "View table content" "Exit")
         case $choice in
             "Create Table" )
-                read -p "table name : " table_name
+                
+                table_name=$(zenity --entry --text="Enter table name")
                 is_exist $table_name
                 if [ $? -eq 1 ]; then
+                    zenity --error --text="the table $table_name doesn't exist"
                     echo "Sorry, table $table_name already exists."
                 else
                     create_table $table_name
                 fi
                 ;;
             "List Tables" )
-                echo "Listing tables..."
+                zenity --info --text="Listing tables..."
                 list_tables
                 ;;
             "Drop Table" )
-                echo "Enter the table name to be dropped:"
-                read table_name
+            table_name=$(zenity --entry --text="Enter table name")
                 is_exist $table_name
                 if [ $? -eq 1 ]; then
                     drop_table $table_name
                 else
-                    echo "Table doesn't exist."
+                    zenity --error --text="Table doesn't exist."
                 fi
                 ;;
             "Insert into table" )
@@ -248,7 +252,7 @@ function table_menu {
                 ;;
 
 	"Select from table" )
-		 read -p "Enter table name :" table_name
+        table_name=$(zenity --entry --text="Enter table name")
 		source select.sh $database_name $table_name
 			;;
 
@@ -267,14 +271,14 @@ function table_menu {
 	;;
 
 "Exit" )
-	echo "Exit the script...Good bye!"
+    zenity --info --text="Exit the script .. Good bye!"
 	exit 0
 	;;
 
 
 		
             * )
-                echo "Invalid option."
+                zenity --error --text="Invalid option."
                 ;;
         esac
     done
@@ -282,7 +286,7 @@ function table_menu {
 
 # Main script execution
 if [ $# -eq 0 ]; then
-    echo "You are not connected to a database."
+    zenity --error --text="you are not connected to a database."
     return 1
 fi
 database_name=$1
