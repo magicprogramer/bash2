@@ -8,19 +8,15 @@ fi
 
 # Function to display the main menu
 main_menu() {
-    echo "1. Create Database"
-    echo "2. List Databases"
-    echo "3. Connect To Database"
-    echo "4. Drop Database"
-    echo "5. Exit"
-    read -p "Enter your choice: " choice
-
+       choice=$(zenity --list --title="Database Menu" --text="Please select an option:" --column="database options" \
+        "Create Database" "List Databases" "Connect to Database" "Drop Database" "Exit")
+    echo $case
     case $choice in
-        1) create_database ;;
-        2) list_databases ;;
-        3) connect_database ;;
-        4) drop_database ;;
-        5) exit_script ;;
+        "Create Database") create_database ;;
+        "List Databases") list_databases ;;
+        "Connect to Database") connect_database ;;
+        "Drop Database") drop_list ;;
+        "Exit") exit_script ;;
         *) echo "Invalid choice! Please try again." ;;
     esac
     main_menu
@@ -28,36 +24,37 @@ main_menu() {
 
 # Function to create a new database
 create_database() {
-    read -p "Enter Database name: " dbname
+    dbname=$(zenity --entry --text="Enter Database name: ")
+  ## $dbname="dsfbweh"
     if [ -d "$db_dir/$dbname" ]; then
-        echo "Database $dbname already exists!"
+        zenity --error --text="Database $dbname already exists !"
     else
         mkdir -p "$db_dir/$dbname"
-        echo "Database $dbname created successfully!"
+        zenity --info --text="Database $dbname created successfully!"
     fi
     main_menu
 }
 
 list_databases(){
 if [ $(ls "$db_dir" | wc -l) -eq 0 ]; then 
-echo "System doesn't contain any database"
+zenity --info --text="system doesn't contain a database"
 
 else
-echo "Databases in system: "	
-ls "$db_dir"
+ zenity --list --column="databases" $(ls "$db_dir")
 fi
 
 }
 
 
 connect_database() {
-    read -p "Enter database name to connect: " dbname
+    
+    dbname=$(zenity --entry --text="Enter Database name to connect with: ")
 
     if [ -d "$db_dir/$dbname" ]; then
 	PS3="[$dbname]>"
         source dbms "$dbname"
     else
-        echo "Database '$dbname' doesn't exist."
+        zenity --error --text="database $dbname doesn't exist "
         main_menu
     
 	fi
@@ -67,44 +64,43 @@ connect_database() {
 drop_list(){
 	#check if system has databases or not
 	if [ $(ls "$db_dir" | wc -l) -eq 0 ]; then
-	echo "System doesn't contain any database to delete"
+    zenity --error --text="system doesn't contain any database"
 	main_menu
 	return
 	fi
-    read -p "Enter database name to drop: " dbname
+    dbname=$(zenity --entry --text="Enter Database name to drop connect with: ")
 	#check if data base is empty
     if [ -z "$dbname" ]; then
-        echo "You must enter the database name to drop."
+        zenity --error --text="you must enter a database name to drop"
         main_menu
         return
     fi
 	#check existing of database
     if [ ! -d "$db_dir/$dbname" ]; then
-        echo "Database '$dbname' does not exist."
+    
+        zenity --error --text="you must enter a database name to drop"
         main_menu
         return
     fi
-
-	#cofirm deleting the database
-    read -p "Are you sure you want to drop the database '$dbname'? [y/n]: " ans
+    ans=$(zenity --entry --text="are you sure you want to drop the database $dbname ? [y/n]")
     if [[ "$ans" != "y" ]]; then
-        echo "canceling drop of database .."
+        zenity --info --text="cancel..."
         main_menu
         return
     fi
 
     rm -r "$db_dir/$dbname"
     if [ $? -eq 0 ]; then
-        echo "Database '$dbname' dropped successfully."
+        zenity --info --text="$dbname dropped succesfully."
     else
-        echo " Failed to delete database '$dbname'."
+        zenity --info --text="failed to drop database $dbname"
     fi
 
     main_menu
 }
 
 exit_script() {
-    echo "Exiting the script.."
+    zenity --info --text="exist the script"
     exit 0
 }
 
