@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/bash
 # Check if the databases directory exists or not
 db_dir="./db"
 if [ ! -d "$db_dir" ]; then
@@ -7,9 +6,9 @@ if [ ! -d "$db_dir" ]; then
 fi
 
 # Function to display the main menu
-main_menu() {
-       choice=$(zenity --list --title="Database Menu" --text="Please select an option:" --column="database options" \
-        "Create Database" "List Databases" "Connect to Database" "Drop Database" "Exit")
+main_menu(){
+ choice=$(zenity --list --title="Database Menu" --text="Please select an option:" --column="database options" \
+  "Create Database" "List Databases" "Connect to Database" "Drop Database" "Exit")
     echo $case
     case $choice in
         "Create Database") create_database ;;
