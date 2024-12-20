@@ -1,148 +1,289 @@
 #!/bin/bash
-function is_exist
-{
-declare -i exist=0
-for file in `ls "./db/$database_name"`
-do
-	if [ $file == $1 ]
-	then
-		exist=1
-		echo "$file" "$1"
-		break
 
-	fi
-done
-return $exist
+# Function to check if a table exists
+function is_exist {
+    declare -i exist=0
+    for file in `ls "./db/$database_name"`; do
+        if [ "$file" == "$1" ]; then
+            exist=1
+            echo "$file" "$1"
+            break
+        fi
+    done
+    return $exist
 }
-function is_num
-{
-	if [ $# -eq 0 ]
-	then
-		echo "you must provide an argument"
-		exit 1
-	fi
-	if [[ $1 =~ ^[0-9]+$  ]]
-	then
-		return 1
-	else
-		return 0
-	fi
-		
+
+# Function to check if input is a number
+function is_num {
+    if [ $# -eq 0 ]; then
+        echo "You must provide an argument"
+        exit 1
+    fi
+    if [[ $1 =~ ^[0-9]+$ ]]; then
+        return 1
+    else
+        return 0
+    fi
 }
-function create_table_types
-{
-	if [ $# -eq 0 ]
+
+function create_table_types {
+    if [ $# -eq 0 ]; then
+        exit 1
+    fi
+    table_name=$1
+    local n=0
+    while true; do
+        echo "Enter number of fields"
+        read n
+        is_num $n
+        if [ $? -eq 1 ]; then
+           # echo "correct"
+            break
+        fi        
+    done
+    declare fields_names=""
+    declare fields_types=""
+    primary_key=0
+    chosen=0
+    for i in $(seq 1 $n); do
+        echo $i
+        echo -n "Enter field number $i: "
+        local f=""
+        read f
+        echo -n "Select type of field: "
+        local c=""
+        select choice in "integer" "string" "char"; do
+            c=$choice
+            break
+        done
+	if [ $chosen -ne 1 ]
 	then
-		exit 1
-	fi
-	table_name=$1
-	local n=0
-	while [ 1 -eq 1 ]
-	do
-		echo "enter number of fields"
-		read n
-		is_num $n
-		if [ $? -eq 1 ]
-		then
-		       echo "correct"
-		       break
-	        fi		
-	done
-	declare fields_names=""
-	declare fields_types=""
-	for i in {1..$n}
-	do
-		echo -n "enter field number $i : "
-		local f=""
-		read f
-		echo -n "select type of field :"
-		local c=""
-		select choice in "integer" "string" "char";
+		select choice in "pk" "not pk"
 		do
-			c=$choice
+			if [ "$choice" == "pk" ]
+			then
+				chosen=1;
+			fi
 			break
 		done
-		echo $c
-		if [[ $fields_names == "" ]]
+		if [ $chosen -eq 1 ]
 		then
-			fields_names="$f"
-		else
-			fields_names="${fields_names}|${f}"
+			primary_key=1
+			f="+$f"
 		fi
-		if [[ $fields_types == "" ]]
+	fi
+	if [ $i -eq $n ]
+	then
+		if [ $primary_key -eq 0 ]
 		then
-			fields_types="$c"
-		else
-			fields_types="${fields_types}|${c}"
+			f="+$f"
 		fi
-	done
-	echo $fields_names >> "./db/$database_name/$table_name"
-	echo $fields_types >> "./db/$database_name/$table_name"
-
-	
-
-}
-function create_table
-{
-	#table_path="./db/$database_name/$1"
-	#echo $table_path
-	create_table_types $1
-	#touch $table_path
-	echo "table created succesfully"
-}
-function list_tables
-{
-	for file in `ls ".//db//$database_name//"`
-	do
-		echo "$file"
-	done
-}
-function drop_table
-{
-	rm -r ".//db//$table_name"
-	echo "table $table_name got deleted"
-}
-function table_menu
-{
-select choice in "Create Table" "List Tables" "drop Table";
-do
-case $choice in 
-"Create Table" )
-	echo "enter the name of the table to be created !"
-	read  table_name
-	is_exist $table_name
-	if [ $? -eq 1 ]
-	then
-		echo "sorry table $table_name  alread exist"
-	else
-		create_table $table_name
 	fi
-	echo $?
-	;;
-"List Tables" )
-	echo "list tables"
-	list_tables
-	;;
-"drop Table" )
-	echo "enter the table name to be droped"
-	read table_name
-	is_exist $table_name
-	if [ $? -eq 1 ]
-	then
-		drop_table $table_name
-	else
-		echo "table doesn't exist"
-	fi
-	;;
-* ) 
-	echo "invalid option"
-esac
-done
+        echo $c
+        if [[ $fields_names == "" ]]; then
+            fields_names="$f"
+        else
+            fields_names="${fields_names}|${f}"
+        fi
+        if [[ $fields_types == "" ]]; then
+            fields_types="$c"
+        else
+            fields_types="${fields_types}|${c}"
+        fi
+    done
+    echo $fields_names >> "./db/$database_name/$table_name"
+    echo $fields_types >> "./db/$database_name/$table_name"
 }
-if [ $# -eq 0 ]
-then
-	echo "you are not connected to a database"
-	return 1
+
+function create_table {
+    create_table_types $1
+    echo "Table created successfully."
+}
+
+function list_tables {
+	for file in $(ls "./db/$database_name/"); do
+        echo "$file"
+    done
+}
+
+function drop_table {
+    rm -r "./db/$database_name/$1"
+    echo "Table $1 has been deleted."
+}
+
+
+function insert_into_table {
+    database_name=$1
+    read -p "Enter table name: " tablename
+
+    if [ ! -f "./db/$database_name/$tablename" ]; then
+        echo "Table '$tablename' does not exist."
+        return
+    fi
+
+    table_header=$(head -n 1 "./db/$database_name/$tablename")
+    data_types=$(sed -n '2p' "./db/$database_name/$tablename")  
+
+    col_names=($(echo "$table_header" | tr '|' '\n'))
+    col_types=($(echo "$data_types" | tr '|' '\n'))
+
+    row_data=""
+
+    for i in "${!col_names[@]}"; do
+        while true; do
+            read -p "Enter '${col_names[i]}' (${col_types[i]}): " value
+
+            if [[ "${col_types[i]}" == "integer" && ! "$value" =~ ^[0-9]+$ ]]; then
+                echo "${col_names[i]}' must be an integer, Try again."
+            elif [[ "${col_types[i]}" == "string" && -z "$value" ]]; then
+                echo "${col_names[i]}' cannot be empty, Try again."
+            else
+                row_data+="$value|"
+                break
+            fi
+        done
+    done
+
+    row_data=${row_data%|}
+    echo "$row_data" >> "./db/$database_name/$tablename"
+    echo "Data inserted successfully."
+}
+
+delete_from_table() {
+    database_name=$1
+    read -p "Enter table name: " tablename
+
+    if [ ! -f "./db/$database_name/$tablename" ]; then
+        echo "Table '$tablename' does not exist."
+        source tabels_options.sh "$database_name"
+        return
+    fi
+
+    header=$(head -n 1 "./db/$database_name/$tablename")
+    col_names=($(echo "$header" | awk -F'|' '{for(i=1;i<=NF;i++) print $i}'))
+
+    echo "Available fields: ${col_names[*]}"
+
+    pattern=""
+    for col in "${col_names[@]}"; do
+        read -p "Enter value for '$col' (leave empty to skip): " value
+        if [[ -n $value ]]; then
+            if [[ -n $pattern ]]; then
+                pattern+=".*"
+            fi
+            pattern+="$value"
+        fi
+    done
+
+    if [[ -z $pattern ]]; then
+        echo "No conditions provided. Operation cancelled."
+        return
+    fi
+
+    matched=$(grep "$pattern" "./db/$database_name/$tablename")
+
+    if [[ -z $matched ]]; then
+        echo "No matched results."
+        return
+    fi
+
+    echo "Matched rows:"
+    echo "$matched"
+    read -p "Are you sure you want to delete matching rows? (yes/no): " confirm
+    if [[ $confirm != "yes" ]]; then
+        echo "Operation cancelled."
+        return
+    fi
+
+    sed -i "/${pattern}/d" "./db/$database_name/$tablename"
+    echo "Rows deleted successfully."
+}
+
+view_table() {
+    database_name=$1
+    read -p "Enter table name to view: " tablename
+
+    if [ ! -f "./db/$database_name/$tablename" ]; then
+        echo "Table '$tablename' does not exist."
+        return
+    fi
+
+    echo "Contents of table '$tablename':"
+    cat "./db/$database_name/$tablename"
+}
+
+
+# Function to display table menu
+function table_menu {
+    select choice in "Create Table" "List Tables" "Drop Table" "Insert into table" "Delete from table" "Select from table" "Update table" "Retern to Main menu" "View table content" "Exit"; do
+        case $choice in
+            "Create Table" )
+                read -p "table name : " table_name
+                is_exist $table_name
+                if [ $? -eq 1 ]; then
+                    echo "Sorry, table $table_name already exists."
+                else
+                    create_table $table_name
+                fi
+                ;;
+            "List Tables" )
+                echo "Listing tables..."
+                list_tables
+                ;;
+            "Drop Table" )
+                echo "Enter the table name to be dropped:"
+                read table_name
+                is_exist $table_name
+                if [ $? -eq 1 ]; then
+                    drop_table $table_name
+                else
+                    echo "Table doesn't exist."
+                fi
+                ;;
+            "Insert into table" )
+                insert_into_table $database_name
+                ;;
+            "Delete from table" )
+                delete_from_table $database_name
+                ;;
+
+	"Select from table" )
+		 read -p "Enter table name :" table_name
+		source select.sh $database_name $table_name
+			;;
+
+			"Update table" )
+		read -p "Enter table name" $table_name
+		source update.sh $database_name	$table_name
+		;;
+
+	"Retern to Main menu" )
+
+		source maim_menu.sh
+	;;
+
+"View table content" )
+	view_table $database_name
+	;;
+
+"Exit" )
+	echo "Exit the script...Good bye!"
+	exit 0
+	;;
+
+
+		
+            * )
+                echo "Invalid option."
+                ;;
+        esac
+    done
+}
+
+# Main script execution
+if [ $# -eq 0 ]; then
+    echo "You are not connected to a database."
+    return 1
 fi
 database_name=$1
 table_menu

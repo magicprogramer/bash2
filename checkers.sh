@@ -18,15 +18,15 @@ function is_char
 {
 	if [ $# -ne  1 ]
 	then
-		echo "you must provide an argument that doesn't contain space"
+		#echo "you must provide an argument that doesn't contain space"
 		return 0
 	fi
 	if [[ ${#1} -eq 1 && $1 =~ ^[a-zA-Z]$ ]]
 	then
-		echo "char"
+		#echo "char"
 		return 1
 	else
-		echo "not char"
+		#echo "not char"
 		return 0
 	fi
 }
