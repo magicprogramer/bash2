@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 if [ $# -ne 2 ]
 then
-	echo "expected two args"
+	zenity --error --text="missing args"
 	return 
 fi
 database_name=$1
@@ -12,18 +12,25 @@ declare -i n=0
 #tail -n 1 "db/$database_name/$table_name"
 n=$(head -n 1 "db/$database_name/$table_name" | grep -o "|" | wc -l)
 n=$((n+1))
-echo "na equal " $n
-echo "you are required to enter the new values for the  fields you will update  or leave it empty to not not change it"
+zenity --info  --title="update table $table_name" --text="number of fields are $n"
+zenity --info --title="update table $table_name"  --text="you are required to enter the new value for each field you will update or you
+can leave it empty to not update this field"
 pattern=""
 new_values=""
 for i in $(seq 1 $n)
 do
 	  type1=$(sed -n '2p' "./db/$database_name/$table_name" | cut -d "|" -f $i)
-	echo "enter the new value for " $(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i) "($type1) : "
+	 #echo "enter the new value for " $(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i) "($type1) : "
 	field=""
 	while (true)
 	do
-		read field
+		field=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)
+		field=$(zenity --entry --title="update table $table_name" --text="enter the new value for $field ($type1) : ")
+		#read field
+		if [ $? -eq 1 ]
+		then 
+			continue;
+		fi
 		if [ -z $field ]
 		then
 			break
@@ -35,7 +42,8 @@ do
 			then
 				break
 			else
-				echo "you should enter an integer"
+				zenity --error --title="warning" --text="you should enter an integer"
+				#echo "you should enter an integer"
 				continue
 			fi
 			fi
@@ -46,7 +54,8 @@ do
 				then
 					break
 			else 
-				echo "you should enter exactly one character"
+				zenity --error --title="warning" --text="you should enter exactly one character"
+				#echo "you should enter exactly one character"
 				continue
 			fi
 			fi
@@ -70,16 +79,19 @@ do
 	fi
 done
 #echo "new values $new_values"
-echo "now enter the conditions that you only change the record when the field = your entered value or leave it empty if you don't want to match with it"
+zenity --info --title="update table : $table_name" --text="now for every of the following fields enter the value which based on it you will decide to update the record or not"
+#echo "now enter the conditions that you only change the record when the field = your entered value or leave it empty if you don't want to match with it"
 for i in $(seq 1 $n)
 do
-	echo "enter the value for "  $(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)
-	type1=$(sed -n '2p' "./db/$database_name/$table_name" | cut -d "|" -f $i)	
+	#echo "enter the value for "  $(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)
+	type1=$(sed -n '2p' "./db/$database_name/$table_name" | cut -d "|" -f $i)
+	field=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)	
 	echo "its an " "$type1"
-	field=""
 	while (true)
 	do
-	 read field
+	  field=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f $i)
+	field=$(zenity --entry --title="conditions" --text="enter the value for $field ($type1)")
+	 #read field
 	 if [ -z  "$field" ]
 	then 
 		break
@@ -92,7 +104,8 @@ do
 	then
 		break
 	else
-		echo "you should enter an integer"
+		zenity --error --text="you should enter an integer"
+		#echo "you should enter an integer"
 		continue
 	fi
 	 fi
@@ -103,6 +116,7 @@ do
 	then 
 		break
 	else
+		zenity --info --text="you should enter exactly one character"
 		echo "you should enter exactly one character"
 		continue
 	fi
@@ -185,7 +199,7 @@ else
 ' "db/$database_name/$table_name" > "/tmp/f22"
 #cat "/tmp/f22"
 mv -f "/tmp/f22" "db/$database_name/$table_name"
-echo "updated succesfully !"
+zenity --info  --text="updated succesfully !"
 
 
 #types=$(head -n 1 "db/$database_name/$table_name" | cut -d "|" -f 1-4)
